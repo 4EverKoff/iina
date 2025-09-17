@@ -526,6 +526,8 @@ class MainWindowController: PlayerWindowController {
   }
 
   var pipVideo: NSViewController!
+  
+  let blurView = NSVisualEffectView()
 
   // MARK: - Initialization
 
@@ -704,6 +706,11 @@ class MainWindowController: PlayerWindowController {
     // If a video is not actively playing then the initial drawing of the view needs to be forced.
     // The forceDraw method will check to see if drawing is actually needed.
     forceDraw("window loaded")
+
+    blurView.material = .sidebar
+    blurView.blendingMode = .withinWindow
+    blurView.state = .active
+    blurView.translatesAutoresizingMaskIntoConstraints = false
   }
 
   /// Returns the position in seconds for the given percent of the total duration of the video the percentage represents.
@@ -2715,6 +2722,8 @@ class MainWindowController: PlayerWindowController {
   /** Set window size when info available, or video size changed. */
   override func handleVideoSizeChange() {
     guard let window = window else { return }
+    
+    window.insertBlurryView(blurView)
 
     // When starting to play the file try and find the screen the window was previously on.
     let screen = player.info.justStartedFile ? determineScreenToUse(window) : window.selectDefaultScreen()
@@ -2821,6 +2830,7 @@ class MainWindowController: PlayerWindowController {
     if fsState.isFullscreen {
       log("In full screen mode, setting prior window frame")
       fsState.priorWindowedFrame = rect
+      blurView.removeFromSuperview()
     } else {
       let rectBefore = rect
       rect = rect.constrain(in: screenRect)
@@ -2831,7 +2841,13 @@ class MainWindowController: PlayerWindowController {
       log("Setting window frame to: \(rect)")
       if player.disableWindowAnimation || Preference.bool(for: .disableAnimations) || !window.isVisible {
         window.setFrame(rect, display: true, animate: false)
+        blurView.removeFromSuperview()
       } else {
+        let interval = window.animationResizeTime(rect)
+        DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
+          self.blurView.removeFromSuperview()
+        }
+
         // animated `setFrame` can be inaccurate!
         window.setFrame(rect, display: true, animate: true)
         window.setFrame(rect, display: true)

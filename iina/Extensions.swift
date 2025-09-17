@@ -857,6 +857,24 @@ extension NSWindow {
     }
     return NSScreen.screens[0]
   }
+  
+  func insertBlurryView(_ effectView: NSVisualEffectView) {
+    guard let contentView = contentView else { return }
+    effectView.frame = contentView.bounds
+    contentView.addSubview(effectView, positioned: .above, relativeTo: nil)
+    
+    NSLayoutConstraint.activate([
+      effectView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      effectView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      effectView.topAnchor.constraint(equalTo: contentView.topAnchor),
+      effectView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+    ])
+  }
+
+  
+  func removeBlurryView(_ effectView: NSVisualEffectView) {
+    effectView.removeFromSuperview()
+  }
 }
 
 extension Process {
