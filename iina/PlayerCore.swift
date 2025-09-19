@@ -2180,6 +2180,10 @@ class PlayerCore: NSObject {
       mainWindow.setWindowFloatingOnTop(!paused)
     }
     syncUI(.playButton)
+
+    if #available(macOS 13, *) {
+      mpv.asyncCommand(.screenshotRaw, replyUserdata: MPVController.UserData.screenshot_raw)
+    }
   }
 
   func playbackRestarted() {

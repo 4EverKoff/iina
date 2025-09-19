@@ -9,6 +9,7 @@
 import Cocoa
 import Mustache
 import WebKit
+import VisionKit
 
 fileprivate let isMacOS11: Bool = {
   if #available(macOS 11.0, *) {
@@ -54,7 +55,7 @@ fileprivate extension NSStackView.VisibilityPriority {
 // The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
 fileprivate let minimumInitialDragDistance: CGFloat = 3.0
 
-class MainWindowController: PlayerWindowController {
+class MainWindowController: PlayerWindowController, ImageAnalysisOverlayViewDelegate {
 
   override var windowNibName: NSNib.Name {
     return NSNib.Name("MainWindowController")
@@ -629,6 +630,16 @@ class MainWindowController: PlayerWindowController {
     pipOverlayView.isHidden = true
     
     if player.disableUI { hideUI() }
+
+    if #available(macOS 13, *) {
+      let overlayView = ImageAnalysisOverlayView()
+      overlayView.preferredInteractionTypes = .automatic
+      overlayView.autoresizingMask = [.width, .height]
+      overlayView.delegate = self
+      let videoView = player.mainWindow.videoView
+      overlayView.frame = videoView.bounds
+      videoView.addSubview(overlayView)
+    }
 
     // add user default observers
     observedPrefKeys.append(contentsOf: localObservedPrefKeys)
@@ -2729,6 +2740,32 @@ class MainWindowController: PlayerWindowController {
     resetCollectionBehavior()
     // don't know why they will be disabled
     standardWindowButtons.forEach { $0.isEnabled = true }
+  }
+
+  @available(macOS 13, *)
+  func showAnalysis(with image: NSImage) {
+    let analyzer = ImageAnalyzer()
+    Task { [weak self] in
+      do {
+        let analysis = try await analyzer.analyze(image, orientation: .up, configuration: .init([.text]))
+        await MainActor.run {
+          guard let self else { return }
+          let overlayView = self.videoView.subviews[0] as! ImageAnalysisOverlayView
+          overlayView.analysis = analysis
+        }
+      } catch {
+        fatalError("Error")
+      }
+    }
+  }
+
+  // MARK: ImageAnalysisOverlayViewDelegate
+
+  @available(macOS 13.0, *)
+  func overlayView(_ overlayView: ImageAnalysisOverlayView,
+             shouldBeginAt point: CGPoint, forAnalysisType
+             analysisType: ImageAnalysisOverlayView.InteractionTypes) -> Bool {
+      return true
   }
 
   // MARK: - Sync UI with playback
