@@ -485,6 +485,10 @@ class MainWindowController: PlayerWindowController {
   @IBOutlet weak var rightArrowLabel: NSTextField!
 
   @IBOutlet weak var osdVisualEffectView: NSVisualEffectView!
+  /// The glass view that replaces osdVisualEffectView on macOS 26+ with Liquid Glass enabled.
+  private var osdGlassView: NSView?
+  /// The effective view to show/hide/animate for OSD (glass view when active, otherwise the VEV).
+  private var osdEffectiveView: NSView { osdGlassView ?? osdVisualEffectView }
   @IBOutlet weak var osdStackView: NSStackView!
   @IBOutlet weak var osdLabel: NSTextField!
   @IBOutlet weak var osdAccessoryText: NSTextField!
@@ -601,7 +605,9 @@ class MainWindowController: PlayerWindowController {
     let _ = quickSettingView
 
     // buffer indicator view
-    bufferIndicatorView.roundCorners(withRadius: 10)
+    if !effectiveLiquidGlass {
+      bufferIndicatorView.roundCorners(withRadius: 10)
+    }
     updateBufferIndicatorView()
 
     // thumbnail peek view
@@ -611,13 +617,36 @@ class MainWindowController: PlayerWindowController {
     // other initialization
     titleBarBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
     cachedScreenCount = NSScreen.screens.count
-    [titleBarView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
-      $0?.state = .active
+    // Apply Liquid Glass on macOS 26+ (if enabled); use legacy vibrancy otherwise
+    if effectiveLiquidGlass {
+      osdGlassView = osdVisualEffectView.applyLiquidGlass(cornerRadius: 10)
+      [additionalInfoView, bufferIndicatorView].forEach {
+        $0?.applyLiquidGlass(cornerRadius: 10)
+      }
+      controlBarFloating.setupLiquidGlass()
+      // Swap controlBarFloating → glassView in fadeableViews so show/hide animations target the glass
+      if let glass = controlBarFloating.glassView {
+        if let idx = fadeableViews.firstIndex(where: { $0 === controlBarFloating }) {
+          fadeableViews[idx] = glass
+        }
+        // Hide the glass view when the OSC is not in floating mode
+        if oscPosition != .floating {
+          glass.isHidden = true
+        }
+      }
+      [controlBarBottom, sideBarView, titleBarView, pipOverlayView].forEach {
+        ($0 as? NSVisualEffectView)?.applyLiquidGlass()
+      }
+    } else {
+      [titleBarView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
+        $0?.state = .active
+      }
+      osdVisualEffectView.roundCorners(withRadius: 10)
+      additionalInfoView.roundCorners(withRadius: 10)
     }
+
     // hide other views
-    osdVisualEffectView.isHidden = true
-    osdVisualEffectView.roundCorners(withRadius: 10)
-    additionalInfoView.roundCorners(withRadius: 10)
+    osdEffectiveView.isHidden = true
     leftArrowLabel.isHidden = true
     rightArrowLabel.isHidden = true
     timePreviewWhenSeek.isHidden = true
@@ -754,9 +783,13 @@ class MainWindowController: PlayerWindowController {
       // remove current osc view from fadeable views
       fadeableViews = fadeableViews.filter { $0 != cb }
     }
+    // Also remove the floating glass view — in floating mode it replaces controlBarFloating in fadeableViews
+    if let glass = controlBarFloating.glassView {
+      fadeableViews = fadeableViews.filter { $0 !== glass }
+    }
 
     // reset
-    ([controlBarFloating, controlBarBottom, oscTopMainView] as [NSView]).forEach { $0.isHidden = true }
+    ([controlBarFloating, controlBarFloating.glassView, controlBarBottom, oscTopMainView] as [NSView?]).compactMap({ $0 }).forEach { $0.isHidden = true }
     titleBarHeightConstraint.constant = TitleBarHeightNormal
 
     controlBarFloating.isDragging = false
@@ -850,7 +883,12 @@ class MainWindowController: PlayerWindowController {
     }
 
     if currentControlBar != nil {
-      fadeableViews.append(currentControlBar!)
+      // On macOS 26 floating mode, animate the glass view instead of the hidden VEV
+      if isFloating, let glass = controlBarFloating.glassView {
+        fadeableViews.append(glass)
+      } else {
+        fadeableViews.append(currentControlBar!)
+      }
     }
     showUI()
 
@@ -2155,9 +2193,9 @@ class MainWindowController: PlayerWindowController {
 
     setOSDViews(fromMessage: message)
 
-    osdVisualEffectView.alphaValue = 1
-    osdVisualEffectView.isHidden = false
-    osdVisualEffectView.layoutSubtreeIfNeeded()
+    osdEffectiveView.alphaValue = 1
+    osdEffectiveView.isHidden = false
+    osdEffectiveView.layoutSubtreeIfNeeded()
 
     osdStackView.views(in: .bottom).forEach {
       osdStackView.removeView($0)
@@ -2189,7 +2227,7 @@ class MainWindowController: PlayerWindowController {
         context.duration = AccessibilityPreferences.adjustedDuration(0.3)
         context.allowsImplicitAnimation = true
         window!.setFrame(newFrame, display: true)
-        osdVisualEffectView.layoutSubtreeIfNeeded()
+        osdEffectiveView.layoutSubtreeIfNeeded()
       }, completionHandler: {
         accessoryView.layer?.opacity = 1
       })
@@ -2206,11 +2244,11 @@ class MainWindowController: PlayerWindowController {
     NSAnimationContext.runAnimationGroup({ (context) in
       self.osdAnimationState = .willHide
       context.duration = OSDAnimationDuration
-      osdVisualEffectView.animator().alphaValue = 0
+      self.osdEffectiveView.animator().alphaValue = 0
     }) {
       if self.osdAnimationState == .willHide {
         self.osdAnimationState = .hidden
-        self.osdVisualEffectView.isHidden = true
+        self.osdEffectiveView.isHidden = true
         self.osdStackView.views(in: .bottom).forEach { self.osdStackView.removeView($0) }
       }
     }
@@ -2507,7 +2545,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func refreshSeekTimeAndThumbnail(from event: NSEvent) {
-    let isCoveredByOSD = !osdVisualEffectView.isHidden && isMouseEvent(event, inAnyOf: [osdVisualEffectView])
+    let isCoveredByOSD = !osdEffectiveView.isHidden && isMouseEvent(event, inAnyOf: [osdEffectiveView])
     let isCoveredBySidebar = !sideBarView.isHidden && isMouseEvent(event, inAnyOf: [sideBarView])
     if isMouseInSlider, !isCoveredByOSD, !isCoveredBySidebar {
       updateTimeLabel(event.locationInWindow)

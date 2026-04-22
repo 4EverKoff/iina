@@ -61,6 +61,9 @@ struct Preference {
 
     static let useLegacyFullScreen = Key("useLegacyFullScreen")
 
+    /** Use Liquid Glass effect on macOS 26+ (bool) */
+    static let useLiquidGlass = Key("useLiquidGlass")
+
     /** Black out other monitors while fullscreen (bool) */
     static let blackOutMonitor = Key("blackOutMonitor")
 
@@ -975,6 +978,7 @@ struct Preference {
     .pauseWhenOpen: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,
+    .useLiquidGlass: true,
     .showChapterPos: false,
     .resumeLastPosition: true,
     .preventScreenSaver: true,

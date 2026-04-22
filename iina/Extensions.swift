@@ -731,6 +731,73 @@ extension NSVisualEffectView {
   func roundCorners(withRadius cornerRadius: CGFloat) {
     maskImage = .maskImage(cornerRadius: cornerRadius)
   }
+
+  /// Replace this NSVisualEffectView with an `NSGlassEffectView` on macOS 26+.
+  ///
+  /// NSVisualEffectView blocks Liquid Glass, so this method hides the VEV,
+  /// moves its subviews into a new `NSGlassEffectView`, and migrates their
+  /// Auto Layout constraints. On older systems this is a no-op.
+  /// Safe to call multiple times (subsequent calls return the existing glass view).
+  ///
+  /// - Parameter cornerRadius: Corner radius for the glass effect. Pass `nil` for system default.
+  /// - Returns: The `NSGlassEffectView`, or `nil` on older OS.
+  @discardableResult
+  func applyLiquidGlass(cornerRadius: CGFloat? = nil) -> NSView? {
+    if #available(macOS 26, *) {
+      guard Preference.bool(for: .useLiquidGlass) else { return nil }
+      guard let parent = self.superview else { return nil }
+
+      // Prevent duplicates on repeated calls
+      if let existing = parent.subviews.first(where: { $0 is NSGlassEffectView }) {
+        return existing
+      }
+
+      // Create the glass view and position it where the VEV is
+      let glassView = NSGlassEffectView()
+      if let cornerRadius = cornerRadius {
+        glassView.cornerRadius = cornerRadius
+      }
+      glassView.translatesAutoresizingMaskIntoConstraints = false
+      parent.addSubview(glassView, positioned: .above, relativeTo: self)
+      NSLayoutConstraint.activate([
+        glassView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+        glassView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+        glassView.topAnchor.constraint(equalTo: self.topAnchor),
+        glassView.bottomAnchor.constraint(equalTo: self.bottomAnchor),
+      ])
+
+      // Migrate subviews off of the VEV, recreating their constraints
+      let subviewsToMove = Array(self.subviews)
+      let constraintsToMigrate = self.constraints.filter { c in
+        subviewsToMove.contains(where: { c.firstItem === $0 || c.secondItem === $0 })
+      }
+
+      // Nest inside glass.contentView so AppKit applies adaptive tint /
+      // legibility treatments. Mirrors ControlBarView.setupLiquidGlass().
+      let wrapper = NSView()
+      wrapper.translatesAutoresizingMaskIntoConstraints = false
+      for subview in subviewsToMove {
+        wrapper.addSubview(subview)
+      }
+      for old in constraintsToMigrate {
+        let first: AnyObject = (old.firstItem === self) ? wrapper : old.firstItem ?? wrapper
+        let second: AnyObject? = (old.secondItem === self) ? wrapper : old.secondItem
+        let migrated = NSLayoutConstraint(
+          item: first, attribute: old.firstAttribute,
+          relatedBy: old.relation,
+          toItem: second, attribute: old.secondAttribute,
+          multiplier: old.multiplier, constant: old.constant)
+        migrated.priority = old.priority
+        migrated.isActive = true
+      }
+      glassView.contentView = wrapper
+
+      // Hide the now-empty VEV so it doesn't block the glass
+      self.isHidden = true
+      return glassView
+    }
+    return nil
+  }
 }
 
 

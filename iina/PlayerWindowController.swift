@@ -27,6 +27,15 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   
   let subsystem: Logger.Subsystem
 
+  /// Whether Liquid Glass effects should be applied.
+  /// Returns `true` only on macOS 26+ when the user has not disabled the preference.
+  internal var effectiveLiquidGlass: Bool {
+    if #available(macOS 26, *) {
+      return UserDefaults.standard.bool(forKey: Preference.Key.useLiquidGlass.rawValue)
+    }
+    return false
+  }
+
   init(playerCore: PlayerCore) {
     self.player = playerCore
     subsystem = Logger.makeSubsystem("window\(player.playerNumber)", ["macwindow"])

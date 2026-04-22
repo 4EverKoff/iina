@@ -150,6 +150,8 @@ class InitialWindowController: NSWindowController {
     reloadData()
   }
 
+  private var liquidGlassView: NSView?
+
   private func setMaterial(_ theme: Preference.Theme?) {
     guard let window = window, let theme = theme else { return }
     window.appearance = NSAppearance(iinaTheme: theme)
@@ -159,6 +161,36 @@ class InitialWindowController: NSWindowController {
       [NSColor.black.withAlphaComponent(0.1).cgColor, NSColor.black.withAlphaComponent(0).cgColor]
     leftOverlayView.wantsLayer = true
     leftOverlayView.layer = gradientLayer
+    if #available(macOS 26, *), Preference.bool(for: .useLiquidGlass) {
+      // Make the window fully transparent so glass can show the desktop
+      window.isOpaque = false
+      window.backgroundColor = .clear
+
+      // Hide the old blur and gradient layers
+      visualEffectView.isHidden = true
+      leftOverlayView.isHidden = true
+
+      // Add a single full-size glass view as the base layer (once)
+      if liquidGlassView == nil {
+        let glassView = NSGlassEffectView()
+        glassView.translatesAutoresizingMaskIntoConstraints = false
+        mainView.addSubview(glassView, positioned: .below, relativeTo: mainView.subviews.first)
+        NSLayoutConstraint.activate([
+          glassView.leadingAnchor.constraint(equalTo: mainView.leadingAnchor),
+          glassView.trailingAnchor.constraint(equalTo: mainView.trailingAnchor),
+          glassView.topAnchor.constraint(equalTo: mainView.topAnchor),
+          glassView.bottomAnchor.constraint(equalTo: mainView.bottomAnchor),
+        ])
+        liquidGlassView = glassView
+      }
+    } else {
+      let gradientLayer = CAGradientLayer()
+      gradientLayer.colors = window.effectiveAppearance.isDark ?
+        [NSColor.black.withAlphaComponent(0.4).cgColor, NSColor.black.withAlphaComponent(0).cgColor] :
+        [NSColor.black.withAlphaComponent(0.1).cgColor, NSColor.black.withAlphaComponent(0).cgColor]
+      leftOverlayView.wantsLayer = true
+      leftOverlayView.layer = gradientLayer
+    }
   }
 
   @objc func onTableClicked() {
@@ -211,7 +243,7 @@ class InitialWindowController: NSWindowController {
         Logger.log("InitialWindow.reloadData(): Loaded RecentDocuments[\(index)]: \(url.resolvingSymlinksInPath().path)", level: .verbose)
       }
     }
-    
+
     if lastFileContainerView.isHidden && recentFilesTableView.numberOfRows > 0 {
       recentFilesTableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
     }
