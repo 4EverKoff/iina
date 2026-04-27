@@ -46,12 +46,13 @@ struct SettingsSubListBuilder {
 
 @resultBuilder
 struct SettingsSectionBuilder {
-  static func buildBlock(_ components: SettingsContainer...) -> [NSView] {
-    return components.map { $0.getContainer() }
+  static func buildBlock(_ components: SettingsContainer...) -> [SettingsContainer] {
+    return components
   }
 }
 
 protocol SettingsContainer {
+  var l10nScope: String? { get set }
   func getContainer() -> NSView
 }
 
@@ -76,7 +77,6 @@ class SettingsPage {
 
   final func getContent() -> NSView {
     let view = content()
-    // inject l10n context
     SettingsLocalization.injectContext(view, localizationContext)
 
     let containerView = NSView()
@@ -90,8 +90,12 @@ class SettingsPage {
     return NSView()
   }
 
-  final func section(@SettingsSectionBuilder _ containers: () -> [NSView]) -> [NSView] {
-    return containers()
+  final func section(_ scope: String? = nil, @SettingsSectionBuilder _ containers: () -> [SettingsContainer]) -> [NSView] {
+    let containers_ = containers()
+    for var c in containers_ {
+      c.l10nScope = scope
+    }
+    return containers_.map { $0.getContainer() }
   }
 
   final func sections(@SettingsViewsBuilder _ sections: () -> [NSView]) -> NSStackView {
@@ -121,6 +125,7 @@ class SettingsListView: NSBox, SettingsContainer, WithSettingsLocalizationContex
   var titleKey: SettingsLocalization.Key?
   var listTitle: String?
   var l10n: SettingsLocalization.Context!
+  var l10nScope: String?
 
   static private let SMALL_TITLE = false
 

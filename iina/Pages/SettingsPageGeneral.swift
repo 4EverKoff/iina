@@ -33,7 +33,7 @@ class SettingsPageGeneral: SettingsPage {
   }
 
   private func sectionBehavior() -> [NSView] {
-    return section {
+    return section("behavior") {
       SettingsListView(title: .text_Behavior) {
         SettingsItem.PopupButton()
           .image(name: "custom.menubar.rectangle.badge.sparkles")
@@ -46,7 +46,7 @@ class SettingsPageGeneral: SettingsPage {
             SettingsItem.Switch()
               .bindTo(.fullScreenWhenOpen)
           }
-        SettingsItem.General(title: .text_PauseresumeWhen)
+        SettingsItem.General(title: .pauseresumeWhen)
           .image(name: "custom.playpause.arrow.trianglehead.clockwise")
           .withExpandingDetailView {
             SettingsItem.Switch()

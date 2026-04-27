@@ -1,13 +1,14 @@
 /* id="" */
-"actionAfterLaunch.label" = "At launch";
+"behavior.actionAfterLaunch.label" = "At launch";
 /* id="z9T-8h-1T0" */
-"actionAfterLaunch.items.0" = "Show welcome window";
+"behavior.actionAfterLaunch.items.0" = "Show welcome window";
 /* id="1ce-4b-kgG" */
-"actionAfterLaunch.items.1" = "Show open file panel";
+"behavior.actionAfterLaunch.items.1" = "Show open file panel";
 /* id="JfZ-D8-aF2" */
-"actionAfterLaunch.items.2" = "Do nothing";
+"behavior.actionAfterLaunch.items.2" = "Do nothing";
 /* id="M0z-bI-88d" */
-"alwaysOpenInNewWindow.label" = "Allow multiple player windows";
+"behavior.alwaysOpenInNewWindow.label" = "Allow multiple player windows";
+
 /* id="WZE-pS-9ne" */
 "groupSimultaneousOpensInPlaylist.label" = "Group media in playlist when opening multiple files at once";
 /* id="Z7U-cf-ezr" */
@@ -123,7 +124,7 @@
 /* key="uQR-Fx-oEm" */
 "$Behavior" = "Behavior";
 /* key="xr2-rB-O0x" */
-"$PauseresumeWhen" = "Pause/resume when";
+"behavior.pauseresumeWhen" = "Pause/resume when";
 
 "$CheckForUpdates.items.3600" = "Hourly";
 "$CheckForUpdates.items.86400" = "Daily";

@@ -102,6 +102,8 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
 
 
 fileprivate class PluginUpdateView: NSView, SettingsContainer {
+  var l10nScope: String?
+  
   func getContainer() -> NSView {
     return self
   }

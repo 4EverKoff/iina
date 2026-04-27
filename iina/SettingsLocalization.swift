@@ -24,22 +24,34 @@ struct SettingsLocalization {
 
   class Context {
     var tableName: String
+    var keyPrefix: String?
 
-    init(tableName: String) {
+    init(tableName: String, keyPrefix: String? = nil) {
       self.tableName = tableName
+      self.keyPrefix = keyPrefix
     }
 
     func localized(_ key: Key) -> String {
-      return NSLocalizedString(key.rawValue, tableName: tableName, comment: key.rawValue)
+      var k = key.rawValue
+      if !k.hasPrefix("$") {
+        k = (keyPrefix ?? "") + (keyPrefix == nil ? "" : ".") + k
+      }
+      return NSLocalizedString(k, tableName: tableName, comment: key.rawValue)
     }
   }
 
   static func injectContext(_ view: NSView, _ context: SettingsLocalization.Context!) {
+    var newContext = context
     if var vc = view as? WithSettingsLocalizationContext {
-      vc.l10n = context
+      if let container = vc as? SettingsContainer {
+        vc.l10n = Context(tableName: context.tableName, keyPrefix: container.l10nScope)
+        newContext = vc.l10n
+      } else {
+        vc.l10n = context
+      }
     }
     for v in view.subviews {
-      injectContext(v, context)
+      injectContext(v, newContext)
     }
   }
 
