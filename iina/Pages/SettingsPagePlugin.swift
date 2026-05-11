@@ -95,8 +95,10 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
   }
 
   @IBAction func installPluginFromGitHub(_ sender: Any) {
-//    let panel = PluginStorePanel()
-//    view.window!.beginSheet(panel)
+    let panel = PluginStorePanel(l10n: .init(tableName: ""))
+    view.window!.beginSheet(panel) {_ in
+      return
+    }
   }
 }
 
