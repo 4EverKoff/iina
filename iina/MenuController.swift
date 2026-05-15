@@ -439,6 +439,13 @@ class MenuController: NSObject, NSMenuDelegate {
 
   private func updatePlaylist() {
     playlistMenu.removeAllItems()
+    playlistMenu.addItem(withTitle: "Save Playlist...",
+                         action: #selector(MainMenuActionHandler.menuSavePlaylist(_:)))
+    playlistMenu.addItem(withTitle: "Load Playlist...",
+                         action: #selector(MainMenuActionHandler.menuLoadPlaylist(_:)))
+    playlistMenu.addItem(withTitle: "Manage Playlists...",
+                         action: #selector(MainMenuActionHandler.menuManagePlaylists(_:)))
+    playlistMenu.addItem(NSMenuItem.separator())
     PlayerCore.active.info.$playlist.withLock { playlist in
       for (index, item) in playlist.enumerated() {
         playlistMenu.addItem(withTitle: item.filenameForDisplay, action: #selector(MainMenuActionHandler.menuPlaylistItem(_:)),

@@ -407,6 +407,16 @@ class PlayerCore: NSObject {
     guard !urls.isEmpty else { return 0 }
     let urls = Utility.resolveURLs(urls)
 
+    if let playlistURL = urls.first(where: { KoffPlaylistStore.isPlaylistURL($0) }) {
+      do {
+        try KoffPlaylistStore.shared.loadPlaylist(at: playlistURL, in: self)
+      } catch {
+        Utility.showAlert("custom", arguments: ["Could not load playlist: \(error.localizedDescription)"],
+                          sheetWindow: currentWindow)
+      }
+      return nil
+    }
+
     // Handle folder URL (to support mpv shuffle, etc), BD folders and m3u / m3u8 files first.
     // For these cases, mpv will load/build the playlist and notify IINA when it can be retrieved.
     if urls.count == 1 {
@@ -1927,6 +1937,8 @@ class PlayerCore: NSObject {
   }
 
   func savePlaybackPosition() {
+    KoffPlaylistStore.shared.autosave(from: self)
+
     guard mpv.getFlag(MPVOption.WatchLater.savePositionOnQuit) else { return }
 
     // The player must be active to be able to save the watch later configuration.
@@ -2911,6 +2923,9 @@ class PlayerCore: NSObject {
 
   func postNotification(_ name: Notification.Name) {
     NotificationCenter.default.post(Notification(name: name, object: self))
+    if name == .iinaPlaylistChanged || name == .iinaFileLoaded {
+      KoffPlaylistStore.shared.autosave(from: self)
+    }
   }
 
   /// Observer for changes to the macOS Touch Bar settings.

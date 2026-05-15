@@ -69,6 +69,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
   @IBOutlet weak var loopBtn: NSButton!
   @IBOutlet weak var shuffleBtn: NSButton!
   @IBOutlet weak var sortBtn: NSButton!
+  @IBOutlet weak var playlistManageBtn: NSButton!
   @IBOutlet weak var totalLengthLabel: NSTextField!
   @IBOutlet var subPopover: NSPopover!
   @IBOutlet var addFileMenu: NSMenu!
@@ -97,7 +98,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     }
     playlistTableView.menu?.delegate = self
 
-    [deleteBtn, loopBtn, shuffleBtn].forEach {
+    [deleteBtn, loopBtn, shuffleBtn, playlistManageBtn].forEach {
       $0?.image?.isTemplate = true
       $0?.alternateImage?.isTemplate = true
     }
@@ -108,6 +109,7 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     addBtn.toolTip = NSLocalizedString("mini_player.add", comment: "add")
     removeBtn.toolTip = NSLocalizedString("mini_player.remove", comment: "remove")
     sortBtn.toolTip = NSLocalizedString("mini_player.sort", comment: "sort")
+    playlistManageBtn.toolTip = "Manage playlists"
 
     hideTotalLength()
 
@@ -480,6 +482,65 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     menu.addItem(withTitle: NSLocalizedString("playlist.sorting.path_ascending", comment: "File Path Ascending"), action: #selector(sortPathAscending), keyEquivalent: "")
     menu.addItem(withTitle: NSLocalizedString("playlist.sorting.path_descending", comment: "File Path Descending"), action: #selector(sortPathDesecnding), keyEquivalent: "")
     NSMenu.popUpContextMenu(menu, with: NSApplication.shared.currentEvent!, for: sender)
+  }
+
+  @IBAction func playlistManageBtnAction(_ sender: NSButton) {
+    let menu = NSMenu()
+    let saveItem = menu.addItem(withTitle: "Save Playlist...",
+                                action: #selector(saveKoffPlaylistAction(_:)),
+                                target: self)
+    saveItem.isEnabled = player.info.$playlist.withLock { !$0.isEmpty }
+    menu.addItem(withTitle: "Load Playlist...",
+                 action: #selector(loadKoffPlaylistAction(_:)),
+                 target: self)
+    menu.addItem(withTitle: "Manage Playlists...",
+                 action: #selector(manageKoffPlaylistsAction(_:)),
+                 target: self)
+    NSMenu.popUpContextMenu(menu, with: NSApplication.shared.currentEvent!, for: sender)
+  }
+
+  @objc private func saveKoffPlaylistAction(_ sender: NSMenuItem) {
+    let filename = KoffPlaylistStore.shared.defaultPlaylistFilename(for: player)
+    let playlistDirectory = try? KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+    Utility.quickSavePanel(title: "Save Playlist", filename: filename,
+                           types: [KoffPlaylistStore.fileExtension], dir: playlistDirectory,
+                           sheetWindow: player.currentWindow) { url in
+      do {
+        try KoffPlaylistStore.shared.saveCurrentPlaylist(from: self.player, to: url)
+      } catch {
+        Utility.showAlert("custom", arguments: ["Could not save playlist: \(error.localizedDescription)"],
+                          sheetWindow: self.player.currentWindow)
+      }
+    }
+  }
+
+  @objc private func loadKoffPlaylistAction(_ sender: NSMenuItem) {
+    do {
+      let playlistDirectory = try KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+      Utility.quickOpenPanel(title: "Load Playlist", chooseDir: false, dir: playlistDirectory,
+                             sheetWindow: player.currentWindow,
+                             allowedFileTypes: [KoffPlaylistStore.fileExtension]) { url in
+        do {
+          try KoffPlaylistStore.shared.loadPlaylist(at: url, in: self.player)
+        } catch {
+          Utility.showAlert("custom", arguments: ["Could not load playlist: \(error.localizedDescription)"],
+                            sheetWindow: self.player.currentWindow)
+        }
+      }
+    } catch {
+      Utility.showAlert("custom", arguments: ["Could not open playlists folder: \(error.localizedDescription)"],
+                        sheetWindow: player.currentWindow)
+    }
+  }
+
+  @objc private func manageKoffPlaylistsAction(_ sender: NSMenuItem) {
+    do {
+      let playlistDirectory = try KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+      NSWorkspace.shared.open(playlistDirectory)
+    } catch {
+      Utility.showAlert("custom", arguments: ["Could not open playlists folder: \(error.localizedDescription)"],
+                        sheetWindow: player.currentWindow)
+    }
   }
 
   @objc func sortNameAscending() { sortName(ascending: true) }

@@ -15,6 +15,7 @@
                 <outlet property="chaptersBtn" destination="SOR-3l-PFj" id="W2q-tm-TA0"/>
                 <outlet property="deleteBtn" destination="7my-AM-8Ts" id="wTg-jz-wRa"/>
                 <outlet property="loopBtn" destination="IHI-5g-OMg" id="Sev-F9-8Dg"/>
+                <outlet property="playlistManageBtn" destination="koF-pm-Btn" id="koF-pm-Out"/>
                 <outlet property="playlistBtn" destination="5Zq-JQ-XO4" id="iAS-Co-wFQ"/>
                 <outlet property="playlistTableView" destination="xIa-sI-0Xn" id="JVO-9u-NdG"/>
                 <outlet property="removeBtn" destination="xKm-J1-NZs" id="cgl-XX-dEK"/>
@@ -357,6 +358,19 @@
                                                     <action selector="sortingBtnAction:" target="-2" id="ONE-Qm-wg2"/>
                                                 </connections>
                                             </button>
+                                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="koF-pm-Btn">
+                                                <rect key="frame" x="74" y="0.0" width="24" height="24"/>
+                                                <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="playlist" imagePosition="only" alignment="center" lineBreakMode="truncatingTail" imageScaling="proportionallyDown" inset="2" id="koF-pm-Cell">
+                                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                    <font key="font" metaFont="system"/>
+                                                </buttonCell>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" constant="24" id="koF-pm-Wdt"/>
+                                                </constraints>
+                                                <connections>
+                                                    <action selector="playlistManageBtnAction:" target="-2" id="koF-pm-Act"/>
+                                                </connections>
+                                            </button>
                                         </subviews>
                                         <constraints>
                                             <constraint firstAttribute="trailing" secondItem="7my-AM-8Ts" secondAttribute="trailing" constant="2" id="1Sc-nK-8IE"/>
@@ -371,12 +385,16 @@
                                             <constraint firstItem="7my-AM-8Ts" firstAttribute="top" secondItem="X2W-MY-vYB" secondAttribute="top" id="LE8-YD-ghx"/>
                                             <constraint firstItem="icQ-T6-fV9" firstAttribute="centerX" secondItem="X2W-MY-vYB" secondAttribute="centerX" id="LSa-Bd-2wQ"/>
                                             <constraint firstItem="icQ-T6-fV9" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Z8a-Hz-sYr" secondAttribute="trailing" constant="4" id="QUU-80-mbD"/>
+                                            <constraint firstItem="icQ-T6-fV9" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="koF-pm-Btn" secondAttribute="trailing" constant="4" id="koF-pm-Lbl"/>
                                             <constraint firstItem="IHI-5g-OMg" firstAttribute="top" secondItem="X2W-MY-vYB" secondAttribute="top" id="VVG-ZO-opa"/>
                                             <constraint firstItem="Z8a-Hz-sYr" firstAttribute="leading" secondItem="xhU-qn-3aa" secondAttribute="trailing" id="XFm-aZ-9xb"/>
+                                            <constraint firstItem="koF-pm-Btn" firstAttribute="leading" secondItem="Z8a-Hz-sYr" secondAttribute="trailing" id="koF-pm-Led"/>
                                             <constraint firstItem="xhU-qn-3aa" firstAttribute="leading" secondItem="IHI-5g-OMg" secondAttribute="trailing" id="beQ-YD-Oxf"/>
+                                            <constraint firstAttribute="bottom" secondItem="koF-pm-Btn" secondAttribute="bottom" id="koF-pm-Bot"/>
                                             <constraint firstItem="xKm-J1-NZs" firstAttribute="leading" secondItem="W9C-Z7-hiI" secondAttribute="trailing" id="lwV-Uv-v1i"/>
                                             <constraint firstAttribute="bottom" secondItem="xhU-qn-3aa" secondAttribute="bottom" id="mPm-LR-ZkL"/>
                                             <constraint firstItem="7my-AM-8Ts" firstAttribute="leading" secondItem="xKm-J1-NZs" secondAttribute="trailing" id="pEm-Ne-DNg"/>
+                                            <constraint firstItem="koF-pm-Btn" firstAttribute="top" secondItem="X2W-MY-vYB" secondAttribute="top" id="koF-pm-Top"/>
                                             <constraint firstItem="xKm-J1-NZs" firstAttribute="top" secondItem="X2W-MY-vYB" secondAttribute="top" id="q0k-4V-oj8"/>
                                             <constraint firstItem="W9C-Z7-hiI" firstAttribute="top" secondItem="X2W-MY-vYB" secondAttribute="top" id="qUl-cf-d3q"/>
                                             <constraint firstItem="IHI-5g-OMg" firstAttribute="leading" secondItem="X2W-MY-vYB" secondAttribute="leading" constant="2" id="shV-bB-ELD"/>

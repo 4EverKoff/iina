@@ -533,7 +533,7 @@
         </customView>
         <userDefaultsController representsSharedInstance="YES" id="IBP-Mz-Maa"/>
         <customView id="y7O-rd-dnT" userLabel="Prefs &gt; General &gt; Playlist">
-            <rect key="frame" x="0.0" y="0.0" width="572" height="146"/>
+            <rect key="frame" x="0.0" y="0.0" width="572" height="170"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <textField identifier="SectionTitlePlaylist" focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="6gO-wx-MWj">
@@ -597,7 +597,7 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="H91-rO-GsT">
-                    <rect key="frame" x="120" y="8" width="214" height="16"/>
+                    <rect key="frame" x="120" y="32" width="214" height="16"/>
                     <buttonCell key="cell" type="check" title="When a file is opened manually:" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="jok-kc-HjX">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -607,7 +607,7 @@
                     </connections>
                 </button>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ECQ-DS-Mdq">
-                    <rect key="frame" x="342" y="4" width="139" height="24"/>
+                    <rect key="frame" x="342" y="28" width="139" height="24"/>
                     <popUpButtonCell key="cell" type="push" title="Loop playlist" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="5WC-Sp-6mg" id="tIo-lj-Gvh">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="message"/>
@@ -627,6 +627,16 @@
                         <binding destination="IBP-Mz-Maa" name="selectedTag" keyPath="values.defaultRepeatMode" id="t2H-YL-KtP"/>
                     </connections>
                 </popUpButton>
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="koF-rs-PLQ">
+                    <rect key="frame" x="120" y="8" width="217" height="16"/>
+                    <buttonCell key="cell" type="check" title="Restore last playlist on launch" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="koF-rc-PLQ">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="IBP-Mz-Maa" name="value" keyPath="values.restoreLastPlaylistOnLaunch" id="koF-bd-PLQ"/>
+                    </connections>
+                </button>
             </subviews>
             <constraints>
                 <constraint firstItem="YDQ-cu-7vE" firstAttribute="leading" secondItem="UHf-eK-ba5" secondAttribute="leading" id="0Kh-Ym-ocl"/>
@@ -649,12 +659,16 @@
                 <constraint firstItem="YDQ-cu-7vE" firstAttribute="top" secondItem="UHf-eK-ba5" secondAttribute="bottom" constant="8" id="fru-O3-rhE"/>
                 <constraint firstItem="6gO-wx-MWj" firstAttribute="trailing" relation="lessThanOrEqual" secondItem="y7O-rd-dnT" secondAttribute="leading" constant="120" id="hMc-8k-u0x"/>
                 <constraint firstItem="OVz-Nv-1WW" firstAttribute="top" secondItem="xmd-ef-R8e" secondAttribute="bottom" constant="4" id="knP-0X-jJU"/>
+                <constraint firstItem="koF-rs-PLQ" firstAttribute="height" secondItem="xmd-ef-R8e" secondAttribute="height" id="koF-ht-PLQ"/>
+                <constraint firstItem="koF-rs-PLQ" firstAttribute="leading" secondItem="H91-rO-GsT" secondAttribute="leading" id="koF-ld-PLQ"/>
+                <constraint firstItem="koF-rs-PLQ" firstAttribute="top" secondItem="H91-rO-GsT" secondAttribute="bottom" constant="8" id="koF-tp-PLQ"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="xmd-ef-R8e" secondAttribute="trailing" priority="100" id="o3a-bC-bx3"/>
-                <constraint firstAttribute="bottom" secondItem="H91-rO-GsT" secondAttribute="bottom" constant="8" id="oCT-Ki-oRN"/>
+                <constraint firstAttribute="bottom" secondItem="koF-rs-PLQ" secondAttribute="bottom" constant="8" id="oCT-Ki-oRN"/>
                 <constraint firstItem="UHf-eK-ba5" firstAttribute="height" secondItem="xmd-ef-R8e" secondAttribute="height" id="olS-mZ-kec"/>
                 <constraint firstItem="6gO-wx-MWj" firstAttribute="top" secondItem="xmd-ef-R8e" secondAttribute="top" id="q99-S9-zIq"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ECQ-DS-Mdq" secondAttribute="trailing" id="tbd-95-jHN"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ey2-TT-Tl9" secondAttribute="trailing" priority="100" id="uQH-zS-Roq"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="koF-rs-PLQ" secondAttribute="trailing" priority="100" id="koF-tr-PLQ"/>
                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="UHf-eK-ba5" secondAttribute="trailing" priority="100" id="z5V-cR-cmi"/>
             </constraints>
             <point key="canvasLocation" x="-2190" y="648"/>

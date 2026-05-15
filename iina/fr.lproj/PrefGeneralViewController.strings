@@ -64,6 +64,9 @@
 /* Class = "NSButtonCell"; title = "Play next item automatically"; ObjectID = "Lac-Ol-g6E"; */
 "Lac-Ol-g6E.title" = "Jouer le fichier suivant automatiquement";
 
+/* Class = "NSButtonCell"; title = "Restore last playlist on launch"; ObjectID = "koF-rc-PLQ"; */
+"koF-rc-PLQ.title" = "Restaurer la derniere playlist au lancement";
+
 /* Class = "NSButtonCell"; title = "Allow multiple player windows"; ObjectID = "M0z-bI-88d"; */
 "M0z-bI-88d.title" = "Toujours ouvrir les fichiers dans une nouvelle fenêtre";
 

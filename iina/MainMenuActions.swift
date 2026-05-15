@@ -28,21 +28,46 @@ class MainMenuActionHandler: NSResponder, NSMenuItemValidation {
   }
 
   @objc func menuSavePlaylist(_ sender: NSMenuItem) {
-    Utility.quickSavePanel(title: "Save to playlist", types: ["m3u8"], sheetWindow: player.currentWindow) { (url) in
-      if url.isFileURL {
-        var playlist = ""
-        self.player.info.$playlist.withLock {
-          for item in $0 {
-            playlist.append((item.filename + "\n"))
-          }
-        }
+    let filename = KoffPlaylistStore.shared.defaultPlaylistFilename(for: player)
+    let playlistDirectory = try? KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+    Utility.quickSavePanel(title: "Save Playlist", filename: filename,
+                           types: [KoffPlaylistStore.fileExtension], dir: playlistDirectory,
+                           sheetWindow: player.currentWindow) { url in
+      do {
+        try KoffPlaylistStore.shared.saveCurrentPlaylist(from: self.player, to: url)
+      } catch {
+        Utility.showAlert("custom", arguments: ["Could not save playlist: \(error.localizedDescription)"],
+                          sheetWindow: self.player.currentWindow)
+      }
+    }
+  }
+
+  @objc func menuLoadPlaylist(_ sender: NSMenuItem) {
+    do {
+      let playlistDirectory = try KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+      Utility.quickOpenPanel(title: "Load Playlist", chooseDir: false, dir: playlistDirectory,
+                             sheetWindow: player.currentWindow,
+                             allowedFileTypes: [KoffPlaylistStore.fileExtension]) { url in
         do {
-          try playlist.write(to: url, atomically: true, encoding: String.Encoding.utf8)
-        } catch let error as NSError {
-          Utility.showAlert("error_saving_file", arguments: ["subtitle",
-                                                            error.localizedDescription])
+          try KoffPlaylistStore.shared.loadPlaylist(at: url, in: self.player)
+        } catch {
+          Utility.showAlert("custom", arguments: ["Could not load playlist: \(error.localizedDescription)"],
+                            sheetWindow: self.player.currentWindow)
         }
       }
+    } catch {
+      Utility.showAlert("custom", arguments: ["Could not open playlists folder: \(error.localizedDescription)"],
+                        sheetWindow: player.currentWindow)
+    }
+  }
+
+  @objc func menuManagePlaylists(_ sender: NSMenuItem) {
+    do {
+      let playlistDirectory = try KoffPlaylistStore.shared.ensurePlaylistsDirectory()
+      NSWorkspace.shared.open(playlistDirectory)
+    } catch {
+      Utility.showAlert("custom", arguments: ["Could not open playlists folder: \(error.localizedDescription)"],
+                        sheetWindow: player.currentWindow)
     }
   }
 
@@ -472,6 +497,8 @@ extension MainMenuActionHandler {
     switch menuItem.action {
     case #selector(menuDeleteCurrentFile(_:)), #selector(menuShowCurrentFileInFinder(_:)):
       return player.info.currentURL != nil && !player.info.isNetworkResource
+    case #selector(menuSavePlaylist(_:)):
+      return player.info.$playlist.withLock { !$0.isEmpty }
     default:
       break
     }
@@ -513,5 +540,267 @@ extension MainMenuActionHandler {
         player.events.emit(.fileStarted)
       }
     }
+  }
+}
+
+final class KoffPlaylistStore {
+
+  static let shared = KoffPlaylistStore()
+  static let fileExtension = "iina-koff-playlist"
+
+  static func isPlaylistURL(_ url: URL) -> Bool {
+    url.pathExtension.lowercased() == fileExtension
+  }
+
+  static func isPlaylistPath(_ path: String) -> Bool {
+    path.lowercasedPathExtension == fileExtension
+  }
+
+  private static let format = "iina-koff-playlist"
+  private static let schemaVersion = 1
+
+  struct PlaylistDocument: Codable {
+    var format: String
+    var schemaVersion: Int
+    var name: String
+    var savedAt: Date
+    var currentIndex: Int?
+    var lastPlayedPath: String?
+    var position: Double?
+    var paused: Bool
+    var items: [PlaylistItem]
+  }
+
+  struct PlaylistItem: Codable {
+    var path: String
+    var title: String?
+  }
+
+  enum StoreError: LocalizedError {
+    case emptyPlaylist
+    case invalidFormat
+    case invalidItem(String)
+
+    var errorDescription: String? {
+      switch self {
+      case .emptyPlaylist:
+        return "The playlist is empty."
+      case .invalidFormat:
+        return "This is not an IINA Koff playlist."
+      case .invalidItem(let path):
+        return "Cannot open playlist item: \(path)"
+      }
+    }
+  }
+
+  private final class PendingRestore {
+    var observer: NSObjectProtocol?
+    let targetIndex: Int
+    let position: Double?
+    var requestedTargetFile = false
+
+    init(targetIndex: Int, position: Double?) {
+      self.targetIndex = targetIndex
+      self.position = position
+    }
+  }
+
+  private let encoder: JSONEncoder = {
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    return encoder
+  }()
+
+  private let decoder: JSONDecoder = {
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return decoder
+  }()
+
+  private let fileManager = FileManager.default
+  private var pendingRestore: PendingRestore?
+  private var isRestoring = false
+
+  var playlistsDirectoryURL: URL {
+    let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    let appFolder = Bundle.main.bundleIdentifier ?? "com.koff.iina"
+    return appSupport
+      .appendingPathComponent(appFolder, isDirectory: true)
+      .appendingPathComponent("Playlists", isDirectory: true)
+  }
+
+  var autosavedPlaylistURL: URL {
+    playlistsDirectoryURL.appendingPathComponent("Autosaved.\(Self.fileExtension)", isDirectory: false)
+  }
+
+  @discardableResult
+  func ensurePlaylistsDirectory() throws -> URL {
+    try fileManager.createDirectory(at: playlistsDirectoryURL, withIntermediateDirectories: true)
+    return playlistsDirectoryURL
+  }
+
+  func defaultPlaylistFilename(for player: PlayerCore) -> String {
+    player.getPlaylist()
+    let name = player.info.$playlist.withLock { playlist in
+      playlist.first(where: { $0.isCurrent || $0.isPlaying })?.filenameForDisplay
+        ?? playlist.first?.filenameForDisplay
+        ?? "Playlist"
+    }
+    return "\(sanitizedFilename(name)).\(Self.fileExtension)"
+  }
+
+  func autosave(from player: PlayerCore) {
+    guard !isRestoring, let document = makeDocument(from: player, name: "Autosaved") else { return }
+    do {
+      try write(document, to: autosavedPlaylistURL)
+    } catch {
+      Logger.log("Failed to autosave IINA Koff playlist: \(error.localizedDescription)", level: .error)
+    }
+  }
+
+  func saveCurrentPlaylist(from player: PlayerCore, to url: URL) throws {
+    guard let document = makeDocument(from: player, name: url.deletingPathExtension().lastPathComponent) else {
+      throw StoreError.emptyPlaylist
+    }
+    let destination = url.pathExtension == Self.fileExtension ? url : url.appendingPathExtension(Self.fileExtension)
+    try write(document, to: destination)
+  }
+
+  func loadPlaylist(at url: URL, in player: PlayerCore) throws {
+    let data = try Data(contentsOf: url)
+    let document = try decoder.decode(PlaylistDocument.self, from: data)
+    try load(document, in: player)
+  }
+
+  @discardableResult
+  func restoreLastAutosavedPlaylistIfAvailable(in player: PlayerCore) -> Bool {
+    guard fileManager.fileExists(atPath: autosavedPlaylistURL.path) else { return false }
+    do {
+      try loadPlaylist(at: autosavedPlaylistURL, in: player)
+      return true
+    } catch {
+      Logger.log("Failed to restore IINA Koff playlist: \(error.localizedDescription)", level: .error)
+      return false
+    }
+  }
+
+  private func makeDocument(from player: PlayerCore, name: String) -> PlaylistDocument? {
+    if player.info.state.active {
+      player.syncPositionIfNeeded()
+      player.getPlaylist()
+    }
+
+    let playlist = player.info.$playlist.withLock {
+      $0.filter { !Self.isPlaylistPath($0.filename) }.map { $0 }
+    }
+    guard !playlist.isEmpty else { return nil }
+
+    let items = playlist.map { PlaylistItem(path: $0.filename, title: $0.title) }
+    let currentIndex = playlist.firstIndex { $0.isCurrent || $0.isPlaying }
+    let position = player.info.videoPosition?.second
+
+    return PlaylistDocument(
+      format: Self.format,
+      schemaVersion: Self.schemaVersion,
+      name: name,
+      savedAt: Date(),
+      currentIndex: currentIndex,
+      lastPlayedPath: currentIndex.map { items[$0].path },
+      position: position?.isFinite == true ? position : nil,
+      paused: player.mpv.getFlag(MPVOption.PlaybackControl.pause),
+      items: items
+    )
+  }
+
+  private func write(_ document: PlaylistDocument, to url: URL) throws {
+    try ensurePlaylistsDirectory()
+    try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    let data = try encoder.encode(document)
+    try data.write(to: url, options: .atomic)
+  }
+
+  private func load(_ document: PlaylistDocument, in player: PlayerCore) throws {
+    guard document.format == Self.format else { throw StoreError.invalidFormat }
+    guard !document.items.isEmpty else { throw StoreError.emptyPlaylist }
+
+    let urls = try document.items.map { item -> (item: PlaylistItem, url: URL) in
+      guard !Self.isPlaylistPath(item.path) else {
+        throw StoreError.invalidItem(item.path)
+      }
+      guard let url = playbackURL(for: item.path) else {
+        throw StoreError.invalidItem(item.path)
+      }
+      return (item, url)
+    }
+
+    let targetIndex = min(max(document.currentIndex ?? 0, 0), urls.count - 1)
+    let pendingRestore = PendingRestore(targetIndex: targetIndex, position: document.position)
+    installRestoreObserver(pendingRestore, for: player)
+
+    isRestoring = true
+    self.pendingRestore = pendingRestore
+
+    player.openURL(urls[0].url, shouldAutoLoad: false)
+    urls.dropFirst().forEach { player.mpv.playlistAppend($0.item.path) }
+    player.getPlaylist()
+    player.postNotification(.iinaPlaylistChanged)
+  }
+
+  private func installRestoreObserver(_ pendingRestore: PendingRestore, for player: PlayerCore) {
+    pendingRestore.observer = NotificationCenter.default.addObserver(
+      forName: .iinaFileLoaded,
+      object: player,
+      queue: .main
+    ) { [weak self, weak player] _ in
+      guard let self, let player else { return }
+      self.handleFileLoadedDuringRestore(player)
+    }
+  }
+
+  private func handleFileLoadedDuringRestore(_ player: PlayerCore) {
+    guard let pendingRestore else { return }
+
+    if pendingRestore.targetIndex > 0 && !pendingRestore.requestedTargetFile {
+      pendingRestore.requestedTargetFile = true
+      player.playFileInPlaylist(pendingRestore.targetIndex)
+      return
+    }
+
+    completeRestore(in: player)
+  }
+
+  private func completeRestore(in player: PlayerCore) {
+    guard let pendingRestore else { return }
+    if let observer = pendingRestore.observer {
+      NotificationCenter.default.removeObserver(observer)
+    }
+    self.pendingRestore = nil
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self, weak player] in
+      guard let self, let player else { return }
+      if let position = pendingRestore.position, position.isFinite, position > 0 {
+        player.seek(absoluteSecond: position)
+      }
+      player.pause()
+      player.mpv.setFlag(MPVOption.PlaybackControl.pause, true, level: .verbose)
+      player.getPlaylist()
+      self.isRestoring = false
+      self.autosave(from: player)
+    }
+  }
+
+  private func playbackURL(for path: String) -> URL? {
+    if path.first == "/" {
+      return URL(fileURLWithPath: path)
+    }
+    return URL(string: path)
+  }
+
+  private func sanitizedFilename(_ filename: String) -> String {
+    let invalidCharacters = CharacterSet(charactersIn: "/\\?%*|\"<>:")
+    let components = filename.components(separatedBy: invalidCharacters)
+    let sanitized = components.joined(separator: "-").trimmingCharacters(in: .whitespacesAndNewlines)
+    return sanitized.isEmpty ? "Playlist" : sanitized
   }
 }

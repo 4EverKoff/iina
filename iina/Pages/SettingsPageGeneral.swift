@@ -151,6 +151,9 @@ class SettingsPageGeneral: SettingsPage {
           .image(name: "custom.list.bullet.badge.play")
           .bindTo(.playlistAutoPlayNext)
         SettingsItem.Switch()
+          .image(name: "clock.arrow.circlepath")
+          .bindTo(.restoreLastPlaylistOnLaunch)
+        SettingsItem.Switch()
           .image(name: "custom.music.microphone.badge.person.crop")
           .bindTo(.playlistShowMetadata)
           .withDetailView {

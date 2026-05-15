@@ -52,6 +52,8 @@
 "playlistAutoAdd.desc" = "Requires restarting IINA to take effect.";
 /* id="Lac-Ol-g6E" */
 "playlistAutoPlayNext.label" = "Play next item automatically";
+/* id="" */
+"restoreLastPlaylistOnLaunch.label" = "Restore last playlist on launch";
 /* id="kBI-Th-bBV" */
 "playlistShowMetadata.label" = "Show artist and track name for audio files when available";
 /* id="AVe-9Z-RgQ" */

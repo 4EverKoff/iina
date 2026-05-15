@@ -103,6 +103,7 @@ struct Preference {
     static let playlistAutoPlayNext = Key("playlistAutoPlayNext")
     static let playlistShowMetadata = Key("playlistShowMetadata")
     static let playlistShowMetadataInMusicMode = Key("playlistShowMetadataInMusicMode")
+    static let restoreLastPlaylistOnLaunch = Key("restoreLastPlaylistOnLaunch")
 
     // UI
 
@@ -973,6 +974,7 @@ struct Preference {
     .disablePlaySliderScrolling: false,
     .disableVolumeSliderScrolling: false,
     .playlistWidth: 270,
+    .restoreLastPlaylistOnLaunch: false,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.dark.rawValue,
     .enableOSD: true,

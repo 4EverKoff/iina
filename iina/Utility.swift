@@ -199,7 +199,7 @@ class Utility {
   /**
    Pop up a save panel.
    */
-  static func quickSavePanel(title: String, filename: String? = nil, types: [String]? = nil,
+  static func quickSavePanel(title: String, filename: String? = nil, types: [String]? = nil, dir: URL? = nil,
                              sheetWindow: NSWindow? = nil, callback: @escaping (URL) -> Void) {
     let panel = NSSavePanel()
     panel.title = title
@@ -207,6 +207,9 @@ class Utility {
     panel.allowedContentTypes = types?.compactMap { UTType(filenameExtension: $0) } ?? []
     if filename != nil {
       panel.nameFieldStringValue = filename!
+    }
+    if let dir = dir {
+      panel.directoryURL = dir
     }
     let handler: (NSApplication.ModalResponse) -> Void = { result in
       if result == .OK, let url = panel.url {

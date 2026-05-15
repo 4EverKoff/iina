@@ -440,6 +440,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   @objc
   func checkForShowingInitialWindow() {
     if !openFileCalled {
+      if Preference.bool(for: .restoreLastPlaylistOnLaunch),
+         KoffPlaylistStore.shared.restoreLastAutosavedPlaylistIfAvailable(in: PlayerCore.first) {
+        return
+      }
       showWelcomeWindow()
     }
   }
