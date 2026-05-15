@@ -741,8 +741,8 @@ final class KoffPlaylistStore {
     isRestoring = true
     self.pendingRestore = pendingRestore
 
-    player.openURL(urls[0].url, shouldAutoLoad: false)
-    urls.dropFirst().forEach { player.mpv.playlistAppend($0.item.path) }
+    player.openURL(urls[0].url, shouldAutoLoad: false, forceMediaTitle: urls[0].item.title)
+    urls.dropFirst().forEach { player.mpv.playlistAppend($0.item.path, title: $0.item.title) }
     player.getPlaylist()
     player.postNotification(.iinaPlaylistChanged)
   }

@@ -599,14 +599,14 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
         let filename = item.filenameForDisplay
         let displayStr: String = NSString(string: filename).deletingPathExtension
 
-        func getCachedMetadata() -> (artist: String, title: String)? {
+        func getCachedMetadata() -> (artist: String?, title: String)? {
           guard Preference.bool(for: .playlistShowMetadata) else { return nil }
           if Preference.bool(for: .playlistShowMetadataInMusicMode) && !player.isInMiniPlayer {
             return nil
           }
           guard let metadata = info.getCachedMetadata(item.filename) else { return nil }
-          guard let artist = metadata.artist, let title = metadata.title else { return nil }
-          return (artist, title)
+          guard let title = metadata.title, !title.isEmpty else { return nil }
+          return (metadata.artist, title)
         }
 
         if let prefix = player.info.currentVideosInfo.first(where: { $0.path == item.filename })?.prefix,

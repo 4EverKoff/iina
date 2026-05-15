@@ -804,6 +804,23 @@ class MPVController: NSObject {
     }
   }
 
+  func command(_ command: MPVCommand, nodeArgs: [Any?], checkError: Bool = true,
+               level: Logger.Level = .debug, returnValueCallback: ((Int32) -> Void)? = nil) {
+    guard mpv != nil else { return }
+    log("Run command: \(command.rawValue) <node args>", level: level)
+    guard var node = try? MPVNode.create([command.rawValue] + nodeArgs) else {
+      Logger.log("Failed to create mpv node command: \(command.rawValue)", level: .error)
+      return
+    }
+    defer { MPVNode.free(node) }
+    let returnValue = mpv_command_node(self.mpv, &node)
+    if checkError {
+      chkErr(returnValue)
+    } else if let cb = returnValueCallback {
+      cb(returnValue)
+    }
+  }
+
   func command(rawString: String, level: Logger.Level = .debug) -> Int32 {
     log("Run command: \(rawString)", level: level)
     return mpv_command_string(mpv, rawString)

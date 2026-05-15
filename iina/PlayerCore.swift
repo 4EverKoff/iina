@@ -297,6 +297,9 @@ class PlayerCore: NSObject {
   /// URL to open once an outstanding mpv stop command completes.
   private var pendingUrl: URL?
 
+  /// Title to apply when opening the URL given in `pendingUrl`.
+  private var pendingForceMediaTitle: String?
+
   let playerNumber: Int
 
   static var keyBindings: [String: KeyMapping] = [:]
@@ -360,7 +363,7 @@ class PlayerCore: NSObject {
 
   // MARK: - Control
 
-  private func open(_ url: URL?, shouldAutoLoad: Bool = false) {
+  private func open(_ url: URL?, shouldAutoLoad: Bool = false, forceMediaTitle: String? = nil) {
     guard let url = url else {
       log("empty file path or url", level: .error)
       return
@@ -373,6 +376,7 @@ class PlayerCore: NSObject {
       log("Waiting for stop command to finish before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
+      pendingForceMediaTitle = forceMediaTitle
       return
     }
     let isNetwork = !url.isFileURL || url.pathExtension.starts(with: "m3u")
@@ -383,6 +387,7 @@ class PlayerCore: NSObject {
       log("Closing window before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
+      pendingForceMediaTitle = forceMediaTitle
       currentWindow.close()
       return
     }
@@ -392,7 +397,7 @@ class PlayerCore: NSObject {
     }
     info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     let path = url.isFileURL ? url.path : url.absoluteString
-    openMainWindow(path: path, url: url, isNetwork: isNetwork)
+    openMainWindow(path: path, url: url, isNetwork: isNetwork, forceMediaTitle: forceMediaTitle)
   }
 
   /**
@@ -464,6 +469,10 @@ class PlayerCore: NSObject {
     openURLs([url], shouldAutoLoad: shouldAutoLoad)
   }
 
+  func openURL(_ url: URL, shouldAutoLoad: Bool = true, forceMediaTitle: String?) {
+    open(url, shouldAutoLoad: shouldAutoLoad, forceMediaTitle: forceMediaTitle)
+  }
+
   func openURLString(_ str: String) {
     if str == "-" {
       openMainWindow(path: str, url: URL(string: "stdin")!, isNetwork: false)
@@ -509,7 +518,7 @@ class PlayerCore: NSObject {
   ///   - path: Path to the media to open.
   ///   - url: URL of the media to open.
   ///   - isNetwork: Whether the media must be streamed over the network.
-  private func openMainWindow(path: String, url: URL, isNetwork: Bool) {
+  private func openMainWindow(path: String, url: URL, isNetwork: Bool, forceMediaTitle: String? = nil) {
     log("Opening \(path) in main window")
     info.currentURL = url
     info.isNetworkResource = isNetwork
@@ -548,7 +557,7 @@ class PlayerCore: NSObject {
     // Send load file command
     info.justOpenedFile = true
     info.state = .loading
-    mpv.command(.loadfile, args: [path], level: .verbose)
+    mpv.loadFile(path, title: forceMediaTitle)
 
     if Preference.bool(for: .autoRepeat) {
        let loopMode = Preference.DefaultRepeatMode(rawValue: Preference.integer(for: .defaultRepeatMode))
@@ -2285,9 +2294,11 @@ class PlayerCore: NSObject {
       info.state = .idle
       postNotification(.iinaPlayerStopped)
       if let pendingUrl {
+        let pendingForceMediaTitle = self.pendingForceMediaTitle
         self.pendingUrl = nil
+        self.pendingForceMediaTitle = nil
         log("Processing pending open")
-        open(pendingUrl, shouldAutoLoad: pendingAutoLoad)
+        open(pendingUrl, shouldAutoLoad: pendingAutoLoad, forceMediaTitle: pendingForceMediaTitle)
       }
     }
   }

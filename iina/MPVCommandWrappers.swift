@@ -7,12 +7,28 @@
 //
 
 extension MPVController {
-  func playlistInsert(_ path: String, index: Int) {
-    command(.loadfile, args: [path, "insert-at", index.description], level: .verbose)
+  func loadFile(_ path: String, title: String? = nil) {
+    if let options = loadFileOptions(title: title) {
+      command(.loadfile, nodeArgs: [path, "replace", -1, options], level: .verbose)
+    } else {
+      command(.loadfile, args: [path], level: .verbose)
+    }
   }
 
-  func playlistAppend(_ path: String) {
-    command(.loadfile, args: [path, "append"], level: .verbose)
+  func playlistInsert(_ path: String, index: Int, title: String? = nil) {
+    if let options = loadFileOptions(title: title) {
+      command(.loadfile, nodeArgs: [path, "insert-at", index, options], level: .verbose)
+    } else {
+      command(.loadfile, args: [path, "insert-at", index.description], level: .verbose)
+    }
+  }
+
+  func playlistAppend(_ path: String, title: String? = nil) {
+    if let options = loadFileOptions(title: title) {
+      command(.loadfile, nodeArgs: [path, "append", -1, options], level: .verbose)
+    } else {
+      command(.loadfile, args: [path, "append"], level: .verbose)
+    }
   }
 
   func playlistMove(_ from: Int, to: Int) {
@@ -23,4 +39,8 @@ extension MPVController {
     command(.playlistRemove, args: [index.description], level: .verbose)
   }
 
+  private func loadFileOptions(title: String?) -> [String: Any?]? {
+    guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else { return nil }
+    return [MPVOption.forceMediaTitle: title]
+  }
 }
