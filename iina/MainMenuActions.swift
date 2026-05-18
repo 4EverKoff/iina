@@ -597,11 +597,13 @@ final class KoffPlaylistStore {
     var observer: NSObjectProtocol?
     let targetIndex: Int
     let position: Double?
+    let pauseOnCompletion: Bool
     var requestedTargetFile = false
 
-    init(targetIndex: Int, position: Double?) {
+    init(targetIndex: Int, position: Double?, pauseOnCompletion: Bool = true) {
       self.targetIndex = targetIndex
       self.position = position
+      self.pauseOnCompletion = pauseOnCompletion
     }
   }
 
@@ -685,6 +687,25 @@ final class KoffPlaylistStore {
     }
   }
 
+  func restoreLastAutosavedPlaylistIfAvailable(in player: PlayerCore, appendingAndPlaying paths: [String]) -> Bool {
+    guard !paths.isEmpty, fileManager.fileExists(atPath: autosavedPlaylistURL.path) else { return false }
+    do {
+      let data = try Data(contentsOf: autosavedPlaylistURL)
+      var document = try decoder.decode(PlaylistDocument.self, from: data)
+      let firstNewIndex = document.items.count
+      document.items.append(contentsOf: paths.map { PlaylistItem(path: $0, title: nil) })
+      document.currentIndex = firstNewIndex
+      document.lastPlayedPath = paths[0]
+      document.position = nil
+      document.paused = false
+      try load(document, in: player, pauseOnCompletion: false)
+      return true
+    } catch {
+      Logger.log("Failed to restore and extend IINA Koff playlist: \(error.localizedDescription)", level: .error)
+      return false
+    }
+  }
+
   private func makeDocument(from player: PlayerCore, name: String) -> PlaylistDocument? {
     if player.info.state.active {
       player.syncPositionIfNeeded()
@@ -720,7 +741,7 @@ final class KoffPlaylistStore {
     try data.write(to: url, options: .atomic)
   }
 
-  private func load(_ document: PlaylistDocument, in player: PlayerCore) throws {
+  private func load(_ document: PlaylistDocument, in player: PlayerCore, pauseOnCompletion: Bool = true) throws {
     guard document.format == Self.format else { throw StoreError.invalidFormat }
     guard !document.items.isEmpty else { throw StoreError.emptyPlaylist }
 
@@ -735,7 +756,7 @@ final class KoffPlaylistStore {
     }
 
     let targetIndex = min(max(document.currentIndex ?? 0, 0), urls.count - 1)
-    let pendingRestore = PendingRestore(targetIndex: targetIndex, position: document.position)
+    let pendingRestore = PendingRestore(targetIndex: targetIndex, position: document.position, pauseOnCompletion: pauseOnCompletion)
     installRestoreObserver(pendingRestore, for: player)
 
     isRestoring = true
@@ -782,8 +803,12 @@ final class KoffPlaylistStore {
       if let position = pendingRestore.position, position.isFinite, position > 0 {
         player.seek(absoluteSecond: position)
       }
-      player.pause()
-      player.mpv.setFlag(MPVOption.PlaybackControl.pause, true, level: .verbose)
+      if pendingRestore.pauseOnCompletion {
+        player.pause()
+        player.mpv.setFlag(MPVOption.PlaybackControl.pause, true, level: .verbose)
+      } else {
+        player.resume()
+      }
       player.getPlaylist()
       self.isRestoring = false
       self.autosave(from: player)

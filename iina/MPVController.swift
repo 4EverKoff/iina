@@ -813,7 +813,7 @@ class MPVController: NSObject {
       return
     }
     defer { MPVNode.free(node) }
-    let returnValue = mpv_command_node(self.mpv, &node)
+    let returnValue = mpv_command_node(self.mpv, &node, nil)
     if checkError {
       chkErr(returnValue)
     } else if let cb = returnValueCallback {

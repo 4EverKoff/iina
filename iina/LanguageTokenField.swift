@@ -135,9 +135,9 @@ class LanguageTokenField: NSTokenField {
     // older working versions of Xcode.
     let attachmentChar: Character
 #if compiler(>=6.3)
-    attachmentChar = Character(UnicodeScalar(NSAttachmentCharacter)!)
-#else
     attachmentChar = Character(UnicodeScalar(NSTextAttachment.character)!)
+#else
+    attachmentChar = Character(UnicodeScalar(NSAttachmentCharacter)!)
 #endif
     let finished = layoutManager.attributedString().string.split(separator: attachmentChar).count == 0
     if finished {

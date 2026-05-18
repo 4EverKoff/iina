@@ -467,6 +467,7 @@ struct Preference {
     case togglePIP
     case abLoop
     case resetSpeed
+    case togglePlaylist
 
     static var defaultValue = MouseClickAction.none
 
@@ -483,6 +484,7 @@ struct Preference {
       case .togglePIP: "togglePIP"
       case .abLoop: "abLoop"
       case .resetSpeed: "resetSpeed"
+      case .togglePlaylist: "togglePlaylist"
       }
     }
   }

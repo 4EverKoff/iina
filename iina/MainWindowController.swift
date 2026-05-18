@@ -1095,6 +1095,8 @@ class MainWindowController: PlayerWindowController {
       player.abLoop()
     case .resetSpeed:
       player.setSpeed(1.0)
+    case .togglePlaylist:
+      showPlaylistSidebar()
     default:
       break
     }

@@ -37,9 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   var shouldIgnoreOpenFile = false
   /** Cached URL when launching from URL scheme. */
   var pendingURL: String?
+  private var isHandlingPendingURLFromLaunch = false
 
   /** Cached file paths received in `application(_:openFile:)`. */
   private var pendingFilesForOpenFile: [String] = []
+  private var receivedOpenFileBeforeReady = false
   /** The timer for `OpenFileRepeatTime` and `application(_:openFile:)`. */
   private var openFileTimer: Timer?
 
@@ -377,7 +379,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // if have pending open request
     if let url = pendingURL {
+      pendingURL = nil
+      isHandlingPendingURLFromLaunch = true
       parsePendingURL(url)
+      isHandlingPendingURLFromLaunch = false
     }
 
     if !commandLineStatus.isCommandLine {
@@ -754,6 +759,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
    */
   func application(_ sender: NSApplication, openFile filename: String) -> Bool {
     openFileCalled = true
+    if !isReady {
+      receivedOpenFileBeforeReady = true
+    }
     openFileTimer?.invalidate()
     pendingFilesForOpenFile.append(filename)
     openFileTimer = Timer.scheduledTimer(timeInterval: OpenFileRepeatTime, target: self, selector: #selector(handleOpenFile), userInfo: nil, repeats: false)
@@ -773,10 +781,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
     let urls = pendingFilesForOpenFile.map { URL(fileURLWithPath: $0) }
     pendingFilesForOpenFile.removeAll()
+    let shouldRestorePlaylistForLaunchOpen = receivedOpenFileBeforeReady
+    receivedOpenFileBeforeReady = false
 
     // if installing a plugin package
     if let pluginPackageURL = urls.first(where: { $0.pathExtension == "iinaplgz" }) {
       preferenceWindowController.performAction(.installPlugin(url: pluginPackageURL))
+      return
+    }
+
+    if shouldRestorePlaylistForLaunchOpen,
+       KoffPlaylistStore.shared.restoreLastAutosavedPlaylistIfAvailable(
+         in: PlayerCore.first,
+         appendingAndPlaying: urls.map { $0.path }
+       ) {
       return
     }
 
@@ -894,11 +912,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
       }
 
       // enqueue
-      let playlistEmpty = PlayerCore.lastActive.info.$playlist.withLock { $0.isEmpty }
-      if let enqueueValue = queryDict["enqueue"], enqueueValue == "1", !playlistEmpty {
-        PlayerCore.lastActive.appendToPlaylist(urlValue)
-        PlayerCore.lastActive.postNotification(.iinaPlaylistChanged)
-        PlayerCore.lastActive.sendOSD(.addToPlaylist(1))
+      let enqueueTarget = PlayerCore.lastActive
+      let playlistEmpty = enqueueTarget.info.$playlist.withLock { $0.isEmpty }
+      if let enqueueValue = queryDict["enqueue"], enqueueValue == "1" {
+        if !playlistEmpty, enqueueTarget.info.state.active {
+          enqueueTarget.appendToPlaylist(urlValue)
+          if enqueueTarget.currentWindow?.isVisible == true {
+            enqueueTarget.sendOSD(.addToPlaylist(1))
+          } else {
+            enqueueTarget.getPlaylist()
+            let appendedIndex = max(enqueueTarget.info.$playlist.withLock { $0.count } - 1, 0)
+            enqueueTarget.playFileInPlaylist(appendedIndex)
+            enqueueTarget.currentController.showWindow(self)
+            NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+          }
+        } else if !isHandlingPendingURLFromLaunch
+                    || !KoffPlaylistStore.shared.restoreLastAutosavedPlaylistIfAvailable(
+                      in: player,
+                      appendingAndPlaying: [urlValue]
+                    ) {
+          player.openURLString(urlValue)
+        }
       } else {
         player.openURLString(urlValue)
       }

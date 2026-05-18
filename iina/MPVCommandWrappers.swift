@@ -41,6 +41,6 @@ extension MPVController {
 
   private func loadFileOptions(title: String?) -> [String: Any?]? {
     guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else { return nil }
-    return [MPVOption.forceMediaTitle: title]
+    return [MPVOption.Miscellaneous.forceMediaTitle: title]
   }
 }

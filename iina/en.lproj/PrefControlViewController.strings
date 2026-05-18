@@ -171,3 +171,18 @@
 
 /* Class = "NSMenuItem"; title = "Enter/Exit picture-in-picture"; ObjectID = "3Pm-nn-HpB"; */
 "3Pm-nn-HpB.title" = "Enter/Exit picture-in-picture";
+
+/* Class = "NSMenuItem"; title = "Show/Hide Playlist Panel"; ObjectID = "plS-CL-7AA"; */
+"plS-CL-7AA.title" = "Show/Hide Playlist Panel";
+
+/* Class = "NSMenuItem"; title = "Show/Hide Playlist Panel"; ObjectID = "plD-CL-7AA"; */
+"plD-CL-7AA.title" = "Show/Hide Playlist Panel";
+
+/* Class = "NSMenuItem"; title = "Show/Hide Playlist Panel"; ObjectID = "plR-CL-7AA"; */
+"plR-CL-7AA.title" = "Show/Hide Playlist Panel";
+
+/* Class = "NSMenuItem"; title = "Show/Hide Playlist Panel"; ObjectID = "plM-CL-7AA"; */
+"plM-CL-7AA.title" = "Show/Hide Playlist Panel";
+
+/* Class = "NSMenuItem"; title = "Show/Hide Playlist Panel"; ObjectID = "plF-CL-7AA"; */
+"plF-CL-7AA.title" = "Show/Hide Playlist Panel";

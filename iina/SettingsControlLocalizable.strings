@@ -28,6 +28,8 @@
 "singleClickAction.items.3" = "Hide OSC";
 /* id="A8c-wa-IFR" */
 "singleClickAction.items.2" = "Pause/Resume";
+/* id="" */
+"singleClickAction.items.7" = "Show/Hide Playlist Panel";
 /* id="w54-7I-QfW" */
 "singleClickAction.items.0" = "None";
 /* id="6F4-gm-oBg" */
@@ -40,6 +42,8 @@
 "doubleClickAction.items.5" = "A-B loop";
 /* id="Zbp-ok-mMJ" */
 "doubleClickAction.items.6" = "Reset speed";
+/* id="" */
+"doubleClickAction.items.7" = "Show/Hide Playlist Panel";
 /* id="wkV-Gq-B0T" */
 "doubleClickAction.items.0" = "None";
 /* id="" */
@@ -56,6 +60,8 @@
 "rightClickAction.items.5" = "A-B loop";
 /* id="ig1-kk-RZu" */
 "rightClickAction.items.6" = "Reset speed";
+/* id="" */
+"rightClickAction.items.7" = "Show/Hide Playlist Panel";
 /* id="oOk-y6-lek" */
 "rightClickAction.items.0" = "None";
 /* id="" */
@@ -72,6 +78,8 @@
 "middleClickAction.items.5" = "A-B loop";
 /* id="Vv4-AU-kGj" */
 "middleClickAction.items.6" = "Reset speed";
+/* id="" */
+"middleClickAction.items.7" = "Show/Hide Playlist Panel";
 /* id="unj-zt-RyU" */
 "middleClickAction.items.0" = "None";
 /* id="gZK-ry-lQs" */
@@ -94,6 +102,8 @@
 "forceTouchAction.items.2" = "Pause/Resume";
 /* id="hDh-Lk-FJe" */
 "forceTouchAction.items.1" = "Enter/Exit full screen";
+/* id="" */
+"forceTouchAction.items.7" = "Show/Hide Playlist Panel";
 /* id="jnR-2I-4x4" */
 "forceTouchAction.items.0" = "None";
 /* key="1yb-m4-1sK" */

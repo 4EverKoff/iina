@@ -114,7 +114,9 @@ class PlaylistViewController: NSViewController, NSTableViewDataSource, NSTableVi
     hideTotalLength()
 
     // colors
-    withAllTableViews { $0.backgroundColor = NSColor.sidebarTableBackground }
+    view.wantsLayer = true
+    view.layer?.backgroundColor = NSColor.black.cgColor
+    withAllTableViews { $0.backgroundColor = .black }
 
     // handle pending switch tab request
     if pendingSwitchRequest != nil {
