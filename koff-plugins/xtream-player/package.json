@@ -1,0 +1,13 @@
+{
+  "name": "iina-xtream-player",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal Xtream live TV plugin for IINA Koff",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/*.test.js",
+    "check": "npm test && npm run build",
+    "package": "npm run check && node scripts/package.mjs"
+  }
+}
+

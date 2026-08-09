@@ -1,0 +1,26 @@
+{
+  "name": "Xtream Player",
+  "identifier": "com.koff.iina.xtream-player",
+  "version": "0.1.0",
+  "description": "Browse and play an authorized Xtream live playlist directly in IINA.",
+  "author": {
+    "name": "Koff"
+  },
+  "entry": "dist/index.js",
+  "permissions": [
+    "show-osd",
+    "network-request",
+    "file-system"
+  ],
+  "allowedDomains": [
+    "*"
+  ],
+  "preferenceDefaults": {
+    "server": "",
+    "username": "",
+    "lastStreamId": "",
+    "lastStreamName": "",
+    "lastStreamExtension": "ts"
+  }
+}
+
